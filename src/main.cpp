@@ -67,7 +67,9 @@ int main() {
         default:
             break;
         }
-        
+        enemy_position = enemy_position + 1;
+
+        lv_obj_align(enemy, LV_ALIGN_LEFT_MID,enemy_position,0);
         lv_obj_align(palyer, LV_ALIGN_RIGHT_MID,0,player_position);
         ThisThread::sleep_for(20ms);
     }
