@@ -26,9 +26,21 @@ int main() {
     int player_y = 125;
     int player_x = 460;
 
-    float enemy1_speed = 1.5;
+    float enemies_speed = 1.5;
     int enemy1_x = -20;
     int enemy1_y = rand() % 245 + 10;
+
+    
+    int enemy2_x = -20;
+    int enemy2_y = rand() % 245 + 10;
+
+    
+    int enemy3_x = -20;
+    int enemy3_y = rand() % 245 + 10;
+
+    
+    int enemy4_x = -20;
+    int enemy4_y = rand() % 245 + 10;
 
     int score = 0;
     int highest_scr = 0;
@@ -70,6 +82,10 @@ int main() {
 
     lv_obj_t * player;
     lv_obj_t * enemy1;
+    lv_obj_t * enemy2;
+    lv_obj_t * enemy3;
+    lv_obj_t * enemy4;
+    
      
     lv_obj_t * label_score; 
     lv_obj_t * label_highest_scr;  
@@ -82,6 +98,18 @@ int main() {
     lv_line_set_points(enemy1, line_point_e, 5);
     lv_obj_add_style(enemy1, &style_line_e, 0);
 
+    enemy2 = lv_line_create(lv_scr_act());
+    lv_line_set_points(enemy2, line_point_e, 5);
+    lv_obj_add_style(enemy2, &style_line_e, 0);
+
+    enemy3 = lv_line_create(lv_scr_act());
+    lv_line_set_points(enemy3, line_point_e, 5);
+    lv_obj_add_style(enemy3, &style_line_e, 0);
+
+    enemy4 = lv_line_create(lv_scr_act());
+    lv_line_set_points(enemy4, line_point_e, 5);
+    lv_obj_add_style(enemy4, &style_line_e, 0);
+
     label_highest_scr = lv_label_create(lv_scr_act());
     lv_obj_align(label_highest_scr, LV_ALIGN_DEFAULT, 5, 5); 
 
@@ -93,9 +121,22 @@ int main() {
     //positionnment de départ
     lv_obj_align(player, LV_ALIGN_DEFAULT,0,0);
     lv_obj_align(enemy1, LV_ALIGN_DEFAULT,0,0);    
+    lv_obj_align(enemy2, LV_ALIGN_DEFAULT,0,0);    
+    lv_obj_align(enemy3, LV_ALIGN_DEFAULT,0,0);    
+    lv_obj_align(enemy4, LV_ALIGN_DEFAULT,0,0);    
 
     lv_obj_set_x(enemy1, enemy1_x);
-    lv_obj_set_y(enemy1, player_y);
+    lv_obj_set_y(enemy1, enemy1_y);
+
+    lv_obj_set_x(enemy2, enemy2_x);
+    lv_obj_set_y(enemy2, enemy2_y);
+
+    lv_obj_set_x(enemy3, enemy3_x);
+    lv_obj_set_y(enemy3, enemy3_y);
+
+    lv_obj_set_x(enemy4, enemy4_x);
+    lv_obj_set_y(enemy4, enemy4_y);
+
     lv_obj_set_x(player, player_x);
     lv_obj_set_y(player, player_y);
 
@@ -112,7 +153,7 @@ int main() {
             //////////////START GAME MENU STATE//////////////
             /////WAIT FOR TOUCH EVENT TO START THE GAME/////
             case 's':
-                if(enemy1_x <500)enemy1_x = enemy1_x + enemy1_speed;
+                if(enemy1_x <500)enemy1_x = enemy1_x + enemies_speed;
                  else{
                     enemy1_x = -20;
                     enemy1_y = rand() % 245 + 10;
@@ -139,14 +180,14 @@ int main() {
 
                 // put your main code here, to run repeatedly:
                 /////////////////////////////////////MOUVEMENT DE L'ENNEMI/////////////////////////////////////     
-                if(enemy1_x <500)enemy1_x = enemy1_x + enemy1_speed;
+                if(enemy1_x <500)enemy1_x = enemy1_x + enemies_speed;
                 else{
                     enemy1_x = -20;
                     enemy1_y = rand() % 245 + 10;
                     
                 }
-                if ((score/10)%20 == 0 && score/10 < 300)enemy1_speed +=0.1;
-                if ((score/10)%500 == 0 && score/10 < 3000)enemy1_speed +=0.1;
+                if ((score/10)%20 == 0 && score/10 < 300)enemies_speed +=0.1;
+                if ((score/10)%500 == 0 && score/10 < 3000)enemies_speed +=0.1;
                 //////////////////////////////////FIN MOUVEMENT DE L'ENNEMI//////////////////////////////////
 
                 /////////////////////////////////////MOUVEMENT DU JOUEUR/////////////////////////////////////
@@ -192,7 +233,7 @@ int main() {
                     osDelay(1800);
                     enemy1_x = -20;
                     player_y = 125;
-                    enemy1_speed = 1.5;
+                    enemies_speed = 1.5;
                     game_state = 's';
                 break;
 
@@ -209,7 +250,7 @@ int main() {
         lv_obj_set_y(player, player_y);        
         
         lv_label_set_text_fmt(label_score, "Score: %d", score/10);
-        lv_label_set_text_fmt(label_highest_scr, "High Score: %f", enemy1_speed);
+        lv_label_set_text_fmt(label_highest_scr, "High Score: %f", enemies_speed);
         threadLvgl.unlock();
         
 
