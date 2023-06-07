@@ -3,38 +3,47 @@
 
 #include "demos/lv_demos.h"
 #include <cstdio>
+#include <ctime>
 
 #include <MPU6050.h>
-
 
 ThreadLvgl threadLvgl(30);
 
 MPU6050 accelero;
 
+volatile char game_state = 's';
 
 void myEvent(lv_event_t *event)
 {    
-    printf("Event\n");
-    /*lv_indev_t * indev = lv_indev_get_act();
-    lv_point_t p;
-    lv_indev_get_point(indev, &p);*/
+    if (game_state == 's') game_state = 'g';
+    else if (game_state == 'l')game_state = 's';
 }
 
 int main() {
+    srand(time(NULL));
+    float player_speed = 1.7;    
+    char direction_p = 'l';
+    int player_y = 125;
+    int player_x = 460;
+
+    float enemy1_speed = 1.5;
+    int enemy1_x = -20;
+    int enemy1_y = rand() % 245 + 10;
+
+    int score = 0;
+    int highest_scr = 0;
+    
 
     i2c.frequency(400000);
     accelero.resetMPU6050(); // Reset registers to default in preparation for device calibration
     accelero.calibrateMPU6050(gyroBias, accelBias); // Calibrate gyro and accelerometers, load biases in bias registers  
     accelero.initMPU6050(); printf("MPU6050 initialized for active data mode....\n\r"); // Initialize device for active mode read of acclerometer, gyroscope, and temperature
 
-    int player_position = 0;
-    float player_speed = 1;
-    int enemy1_position = -20;
-    char direction_p = 'l';
+   
     static lv_point_t line_point_p[]={{0, 0},
                                     {0, 12},
                                     {12, 12},
-                                    {12, 0}};
+                                    {12, 0},{0, 0}};
 
     static lv_style_t style_line_p;
     lv_style_init(&style_line_p);
@@ -46,7 +55,7 @@ int main() {
     static lv_point_t line_point_e[]={{0, 0},
                                     {0, 18},
                                     {18, 18},
-                                    {18, 0}};
+                                    {18, 0},{0, 0}};
 
     static lv_style_t style_line_e;
     lv_style_init(&style_line_e);
@@ -56,14 +65,14 @@ int main() {
 
 
     threadLvgl.lock();
-    lv_obj_clear_flag(lv_scr_act(), LV_OBJ_FLAG_SCROLLABLE);
     
+    lv_obj_clear_flag(lv_scr_act(), LV_OBJ_FLAG_SCROLLABLE);   
 
     lv_obj_t * player;
     lv_obj_t * enemy1;
-    lv_obj_t * label_gyro_x;
-    lv_obj_t * label_gyro_y;
-    lv_obj_t * label_gyro_z;
+     
+    lv_obj_t * label_score; 
+    lv_obj_t * label_highest_scr;  
 
     player = lv_line_create(lv_scr_act());
     lv_line_set_points(player, line_point_p, 5);
@@ -73,90 +82,136 @@ int main() {
     lv_line_set_points(enemy1, line_point_e, 5);
     lv_obj_add_style(enemy1, &style_line_e, 0);
 
-    label_gyro_x = lv_label_create(lv_scr_act());
-    lv_obj_align(label_gyro_x, LV_ALIGN_DEFAULT, 0, 0);
-    label_gyro_y = lv_label_create(lv_scr_act());
-    lv_obj_align(label_gyro_y, LV_ALIGN_DEFAULT, 0, 15);
-    label_gyro_z = lv_label_create(lv_scr_act());
-    lv_obj_align(label_gyro_z, LV_ALIGN_DEFAULT, 0, 30);
+    label_highest_scr = lv_label_create(lv_scr_act());
+    lv_obj_align(label_highest_scr, LV_ALIGN_DEFAULT, 5, 5); 
+
+    label_score = lv_label_create(lv_scr_act());
+    lv_obj_align(label_score, LV_ALIGN_DEFAULT, 5, 20);   
+
+       
 
     //positionnment de départ
     lv_obj_align(player, LV_ALIGN_DEFAULT,0,0);
     lv_obj_align(enemy1, LV_ALIGN_DEFAULT,0,0);    
 
-    lv_obj_set_x(enemy1, enemy1_position);
-    lv_obj_set_y(enemy1, 136);
-    lv_obj_set_x(player, 460);
-    lv_obj_set_y(player, player_position);
+    lv_obj_set_x(enemy1, enemy1_x);
+    lv_obj_set_y(enemy1, player_y);
+    lv_obj_set_x(player, player_x);
+    lv_obj_set_y(player, player_y);
 
-    lv_obj_add_event_cb(lv_scr_act(), myEvent, LV_EVENT_PRESSING, nullptr);
+    lv_obj_add_event_cb(lv_scr_act(), myEvent, LV_EVENT_CLICKED, nullptr);
 
     threadLvgl.unlock();
+    
+    
 
     while (1) {
-        // put your main code here, to run repeatedly:
-        switch (direction_p)
+
+        switch (game_state)
         {
-        case 'l':
-            if(player_position < 255)player_position = player_position + player_speed;
-            else  direction_p ='r';
-            break;
-        
-        case 'r':
-            if(player_position > 7)player_position = player_position - player_speed;
-            else direction_p ='l';
-            break;
-        
-        default:
-            break;
-        }
-
-        if(enemy1_position <500)enemy1_position = enemy1_position + 1.5;
-        else{
-            enemy1_position = -20;
-            lv_obj_set_y(enemy1, rand() % 245 + 10 );
-        } 
-
-        threadLvgl.lock();
-        lv_obj_set_x(enemy1, enemy1_position);
-        lv_obj_set_y(player, player_position);
-        threadLvgl.unlock();
-
-        if(accelero.readByte(MPU6050_ADDRESS, INT_STATUS) & 0x01) {  // check if data ready interrupt
-            accelero.readAccelData(accelCount);  // Read the x/y/z adc values
-            accelero.getAres();
-            ax = (float)accelCount[0]*aRes;
-            ay = (float)accelCount[1]*aRes;   
-            az = (float)accelCount[2]*aRes;  
-
-            lv_label_set_text_fmt(label_gyro_x, "%f", ax*1000);
-            lv_label_set_text_fmt(label_gyro_y, "%f", ay);
-            lv_label_set_text_fmt(label_gyro_z, "%f", az);
-
-            if(ay*1000 > 50){direction_p= 'r';player_speed = 1*ay*10;}
-            else if (ay*1000 < -50){direction_p= 'l';player_speed = 1*abs(ay)*10;}
-            else direction_p= 's';
-
-            /*for (int i = 1000; i > 0; i-=100)
-            {
-                if (abs(ay) > i)
+            //////////////START GAME MENU STATE//////////////
+            /////WAIT FOR TOUCH EVENT TO START THE GAME/////
+            case 's':
+                if(enemy1_x <500)enemy1_x = enemy1_x + enemy1_speed;
+                 else{
+                    enemy1_x = -20;
+                    enemy1_y = rand() % 245 + 10;
+                 }  
+                switch (direction_p)
                 {
-                    player_speed = 1*
+                    case 'l':
+                        if(player_y < 255)player_y = player_y + 1;
+                        else  direction_p ='r';
+                        break;
+                    
+                    case 'r':
+                        if(player_y > 7)player_y = player_y - 1;
+                        else direction_p ='l';
+                        break;                    
+                    default:
+                        break;
+                }       
+                break;
+            
+            //////////////ACTIVE GAME STATE//////////////
+            case 'g':
+                 score +=2;
+
+                // put your main code here, to run repeatedly:
+                /////////////////////////////////////MOUVEMENT DE L'ENNEMI/////////////////////////////////////     
+                if(enemy1_x <500)enemy1_x = enemy1_x + enemy1_speed;
+                else{
+                    enemy1_x = -20;
+                    enemy1_y = rand() % 245 + 10;
+                    
                 }
+                if ((score/10)%20 == 0 && score/10 < 300)enemy1_speed +=0.1;
+                if ((score/10)%500 == 0 && score/10 < 3000)enemy1_speed +=0.1;
+                //////////////////////////////////FIN MOUVEMENT DE L'ENNEMI//////////////////////////////////
+
+                /////////////////////////////////////MOUVEMENT DU JOUEUR/////////////////////////////////////
+                if(accelero.readByte(MPU6050_ADDRESS, INT_STATUS) & 0x01) {  // check if data ready interrupt
+                    accelero.readAccelData(accelCount);  // Read the x/y/z adc values
+                    accelero.getAres();
+                    
+                    ay = (float)accelCount[1]*aRes;        
+
+                    if(ay*1000 > 50){direction_p= 'r';player_speed = 1.3*ay*10;}
+                    else if (ay*1000 < -50){direction_p= 'l';player_speed = 1.3*abs(ay)*10;}
+                    else direction_p= 's';
+                }
+
+                switch (direction_p)
+                {
+                case 'l':
+                    if(player_y < 255)player_y = player_y + player_speed;
+                    else  direction_p ='r';
+                    break;
                 
-            }*/
-            
-           
-            
+                case 'r':
+                    if(player_y > 7)player_y = player_y - player_speed;
+                    else direction_p ='l';
+                    break;
+                
+                default:
+                    break;
+                }
+                //////////////////////////////////FIN MOUVEMENT DU JOUEUR//////////////////////////////////
 
-            /*printf("ax = %f", 1000*ax); 
-            printf(" ay = %f", 1000*ay); 
-            printf(" az = %f  mg\n\r", 1000*az); 
+                /////////////////////////////////////VERIFICATION DE CONTACTE/////////////////////////////////////
+                if (enemy1_x>player_x-27 && enemy1_x<player_x+20){
+                    if(enemy1_y>player_y-26 && enemy1_y<player_y+20 ){game_state = 'l';}
+                }
+                ///////////////////////////////////FIN VERIFICATION DE CONTACTE///////////////////////////////////
+                break;
 
-            printf("gx = %f", gx); 
-            printf(" gy = %f", gy); 
-            printf(" gz = %f  deg/s\n\r", gz); */
+            //////////////LOST GAME STATE//////////////
+            case 'l':
+                    if (highest_scr< score)highest_scr=score;
+                    score = 0;
+                    osDelay(1800);
+                    enemy1_x = -20;
+                    player_y = 125;
+                    enemy1_speed = 1.5;
+                    game_state = 's';
+                break;
+
+            default:
+                break;
         }
+       
+
+        
+       
+        threadLvgl.lock();
+        lv_obj_set_x(enemy1, enemy1_x);
+        lv_obj_set_y(enemy1, enemy1_y);
+        lv_obj_set_y(player, player_y);        
+        
+        lv_label_set_text_fmt(label_score, "Score: %d", score/10);
+        lv_label_set_text_fmt(label_highest_scr, "High Score: %f", enemy1_speed);
+        threadLvgl.unlock();
+        
 
         ThisThread::sleep_for(20ms);
     }
