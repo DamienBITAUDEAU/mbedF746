@@ -13,34 +13,57 @@ MPU6050 accelero;
 
 volatile char game_state = 's';
 
+struct position
+{
+   int x;
+   int y;
+};
+
+PwmOut Buzz(A0);
+
+
+
 void myEvent(lv_event_t *event)
 {    
     if (game_state == 's') game_state = 'g';
     else if (game_state == 'l')game_state = 's';
 }
 
+bool contact (struct position enemy, struct position player);
+
+struct position enemy_move(struct position current_enemy, struct position scnd_enemy, struct position thrd_enemy, struct position frth_enemy, int enemy_speed);
+
+
+
 int main() {
     srand(time(NULL));
     float player_speed = 1.7;    
     char direction_p = 'l';
-    int player_y = 125;
-    int player_x = 460;
+
+    struct position player;
+    player.x = 460;
+    player.y = 125; 
 
     float enemies_speed = 1.5;
-    int enemy1_x = -20;
-    int enemy1_y = rand() % 245 + 10;
 
-    
-    int enemy2_x = -20;
-    int enemy2_y = rand() % 245 + 10;
+    struct position enemy_1;
+    enemy_1.x = -20;
+    enemy_1.y = rand() % 245 + 10;
 
-    
-    int enemy3_x = -20;
-    int enemy3_y = rand() % 245 + 10;
+    struct position enemy_2;
+    enemy_2.x = rand() % -200 - 400;
+    enemy_2.y = rand() % 245 + 10;
 
-    
-    int enemy4_x = -20;
-    int enemy4_y = rand() % 245 + 10;
+    struct position enemy_3;
+    enemy_3.x = rand() % -400 - 600;
+    enemy_3.y = rand() % 245 + 10;
+
+    struct position enemy_4;
+    enemy_4.x = rand() % -800 - 1000;
+    enemy_4.y = rand() % 245 + 10; 
+
+    struct position temp_pos; 
+
 
     int score = 0;
     int highest_scr = 0;
@@ -80,7 +103,7 @@ int main() {
     
     lv_obj_clear_flag(lv_scr_act(), LV_OBJ_FLAG_SCROLLABLE);   
 
-    lv_obj_t * player;
+    lv_obj_t * obj_player;
     lv_obj_t * enemy1;
     lv_obj_t * enemy2;
     lv_obj_t * enemy3;
@@ -90,9 +113,9 @@ int main() {
     lv_obj_t * label_score; 
     lv_obj_t * label_highest_scr;  
 
-    player = lv_line_create(lv_scr_act());
-    lv_line_set_points(player, line_point_p, 5);
-    lv_obj_add_style(player, &style_line_p, 0);
+    obj_player = lv_line_create(lv_scr_act());
+    lv_line_set_points(obj_player, line_point_p, 5);
+    lv_obj_add_style(obj_player, &style_line_p, 0);
 
     enemy1 = lv_line_create(lv_scr_act());
     lv_line_set_points(enemy1, line_point_e, 5);
@@ -119,26 +142,26 @@ int main() {
        
 
     //positionnment de départ
-    lv_obj_align(player, LV_ALIGN_DEFAULT,0,0);
+    lv_obj_align(obj_player, LV_ALIGN_DEFAULT,0,0);
     lv_obj_align(enemy1, LV_ALIGN_DEFAULT,0,0);    
     lv_obj_align(enemy2, LV_ALIGN_DEFAULT,0,0);    
     lv_obj_align(enemy3, LV_ALIGN_DEFAULT,0,0);    
     lv_obj_align(enemy4, LV_ALIGN_DEFAULT,0,0);    
 
-    lv_obj_set_x(enemy1, enemy1_x);
-    lv_obj_set_y(enemy1, enemy1_y);
+    lv_obj_set_x(enemy1, enemy_1.x);
+    lv_obj_set_y(enemy1, enemy_1.y);
 
-    lv_obj_set_x(enemy2, enemy2_x);
-    lv_obj_set_y(enemy2, enemy2_y);
+    lv_obj_set_x(enemy2, enemy_2.x);
+    lv_obj_set_y(enemy2, enemy_2.y);
 
-    lv_obj_set_x(enemy3, enemy3_x);
-    lv_obj_set_y(enemy3, enemy3_y);
+    lv_obj_set_x(enemy3, enemy_3.x);
+    lv_obj_set_y(enemy3, enemy_3.y);
 
-    lv_obj_set_x(enemy4, enemy4_x);
-    lv_obj_set_y(enemy4, enemy4_y);
+    lv_obj_set_x(enemy4, enemy_4.x);
+    lv_obj_set_y(enemy4, enemy_4.y);
 
-    lv_obj_set_x(player, player_x);
-    lv_obj_set_y(player, player_y);
+    lv_obj_set_x(obj_player, player.x);
+    lv_obj_set_y(obj_player, player.y);
 
     lv_obj_add_event_cb(lv_scr_act(), myEvent, LV_EVENT_CLICKED, nullptr);
 
@@ -152,21 +175,32 @@ int main() {
         {
             //////////////START GAME MENU STATE//////////////
             /////WAIT FOR TOUCH EVENT TO START THE GAME/////
-            case 's':
-                if(enemy1_x <500)enemy1_x = enemy1_x + enemies_speed;
-                 else{
-                    enemy1_x = -20;
-                    enemy1_y = rand() % 245 + 10;
-                 }  
+            case 's':                
+                temp_pos = enemy_move(enemy_1, enemy_2, enemy_3, enemy_4, enemies_speed);
+                enemy_1.x = temp_pos.x;
+                enemy_1.y = temp_pos.y;
+
+                temp_pos = enemy_move(enemy_2, enemy_1, enemy_3, enemy_4, enemies_speed);
+                enemy_2.x = temp_pos.x;
+                enemy_2.y = temp_pos.y;
+
+                temp_pos = enemy_move(enemy_3, enemy_1, enemy_2, enemy_4, enemies_speed);
+                enemy_3.x = temp_pos.x;
+                enemy_3.y = temp_pos.y;
+
+                temp_pos = enemy_move(enemy_4, enemy_1, enemy_2, enemy_3, enemies_speed);
+                enemy_4.x = temp_pos.x;
+                enemy_4.y = temp_pos.y;
+
                 switch (direction_p)
                 {
                     case 'l':
-                        if(player_y < 255)player_y = player_y + 1;
+                        if(player.y < 255)player.y = player.y + 1;
                         else  direction_p ='r';
                         break;
                     
                     case 'r':
-                        if(player_y > 7)player_y = player_y - 1;
+                        if(player.y > 7)player.y = player.y - 1;
                         else direction_p ='l';
                         break;                    
                     default:
@@ -177,15 +211,25 @@ int main() {
             //////////////ACTIVE GAME STATE//////////////
             case 'g':
                  score +=2;
+                
+                /////////////////////////////////////MOUVEMENT DE L'ENNEMI/////////////////////////////////////    
+                temp_pos = enemy_move(enemy_1, enemy_2, enemy_3, enemy_4, enemies_speed);
+                enemy_1.x = temp_pos.x;
+                enemy_1.y = temp_pos.y;
 
-                // put your main code here, to run repeatedly:
-                /////////////////////////////////////MOUVEMENT DE L'ENNEMI/////////////////////////////////////     
-                if(enemy1_x <500)enemy1_x = enemy1_x + enemies_speed;
-                else{
-                    enemy1_x = -20;
-                    enemy1_y = rand() % 245 + 10;
-                    
-                }
+                temp_pos = enemy_move(enemy_2, enemy_1, enemy_3, enemy_4, enemies_speed);
+                enemy_2.x = temp_pos.x;
+                enemy_2.y = temp_pos.y;
+
+                temp_pos = enemy_move(enemy_3, enemy_1, enemy_2, enemy_4, enemies_speed);
+                enemy_3.x = temp_pos.x;
+                enemy_3.y = temp_pos.y;
+
+                temp_pos = enemy_move(enemy_4, enemy_1, enemy_2, enemy_3, enemies_speed);
+                enemy_4.x = temp_pos.x;
+                enemy_4.y = temp_pos.y;
+
+                 
                 if ((score/10)%20 == 0 && score/10 < 300)enemies_speed +=0.1;
                 if ((score/10)%500 == 0 && score/10 < 3000)enemies_speed +=0.1;
                 //////////////////////////////////FIN MOUVEMENT DE L'ENNEMI//////////////////////////////////
@@ -205,12 +249,12 @@ int main() {
                 switch (direction_p)
                 {
                 case 'l':
-                    if(player_y < 255)player_y = player_y + player_speed;
+                    if(player.y < 255)player.y = player.y + player_speed;
                     else  direction_p ='r';
                     break;
                 
                 case 'r':
-                    if(player_y > 7)player_y = player_y - player_speed;
+                    if(player.y > 7)player.y = player.y - player_speed;
                     else direction_p ='l';
                     break;
                 
@@ -220,9 +264,11 @@ int main() {
                 //////////////////////////////////FIN MOUVEMENT DU JOUEUR//////////////////////////////////
 
                 /////////////////////////////////////VERIFICATION DE CONTACTE/////////////////////////////////////
-                if (enemy1_x>player_x-27 && enemy1_x<player_x+20){
-                    if(enemy1_y>player_y-26 && enemy1_y<player_y+20 ){game_state = 'l';}
-                }
+                if(contact(enemy_1, player) == true ||
+                   contact(enemy_2, player) == true ||
+                   contact(enemy_3, player) == true ||
+                   contact(enemy_4, player) == true )game_state = 'l';               
+                
                 ///////////////////////////////////FIN VERIFICATION DE CONTACTE///////////////////////////////////
                 break;
 
@@ -230,11 +276,50 @@ int main() {
             case 'l':
                     if (highest_scr< score)highest_scr=score;
                     score = 0;
+                    
+                    
+                    Buzz.period(0.659);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.554);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.659);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.554);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.440);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.494);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.554);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.587);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.494);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.659);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0.440);
+                    Buzz = 0.5;
+                    osDelay(500);
+                    Buzz.period(0);
+
                     osDelay(1800);
-                    enemy1_x = -20;
-                    player_y = 125;
+                    enemy_1.x = -20;
+                    player.y = 125;
                     enemies_speed = 1.5;
                     game_state = 's';
+                    
+
                 break;
 
             default:
@@ -245,9 +330,15 @@ int main() {
         
        
         threadLvgl.lock();
-        lv_obj_set_x(enemy1, enemy1_x);
-        lv_obj_set_y(enemy1, enemy1_y);
-        lv_obj_set_y(player, player_y);        
+        lv_obj_set_x(enemy1, enemy_1.x);
+        lv_obj_set_y(enemy1, enemy_1.y);
+        lv_obj_set_x(enemy2, enemy_2.x);
+        lv_obj_set_y(enemy2, enemy_2.y);
+        lv_obj_set_x(enemy3, enemy_3.x);
+        lv_obj_set_y(enemy3, enemy_3.y);
+        lv_obj_set_x(enemy4, enemy_4.x);
+        lv_obj_set_y(enemy4, enemy_4.y);
+        lv_obj_set_y(obj_player, player.y);        
         
         lv_label_set_text_fmt(label_score, "Score: %d", score/10);
         lv_label_set_text_fmt(label_highest_scr, "High Score: %f", enemies_speed);
@@ -258,4 +349,29 @@ int main() {
     }
 
     
+}
+
+bool contact (struct position enemy, struct position player){
+    if (enemy.x>player.x-27 && enemy.x<player.x+20){
+        if(enemy.y>player.y-26 && enemy.y<player.y+20 ){
+            return true;
+        }else{return false;}
+    }else{return false;}
+}
+
+
+struct position enemy_move(struct position current_enemy, struct position scnd_enemy, struct position thrd_enemy, struct position frth_enemy, int enemy_speed){
+    struct position new_position;
+    if(current_enemy.x <500)current_enemy.x = current_enemy.x + enemy_speed;
+    else{
+        current_enemy.x = rand() % -20 - 110;
+        current_enemy.y = rand() % 245 + 10;
+        while ((current_enemy.y>scnd_enemy.y-30 && current_enemy.y<scnd_enemy.y+30) || (current_enemy.y>thrd_enemy.y-30 && current_enemy.y<thrd_enemy.y+30) || (current_enemy.y>frth_enemy.y-30 && current_enemy.y<frth_enemy.y+30))
+        {
+            current_enemy.y = rand() % 245 + 10;
+        }                    
+    }  
+    new_position.x = current_enemy.x;
+    new_position.y = current_enemy.y;
+    return new_position;
 }
