@@ -7,6 +7,8 @@
 
 #include <MPU6050.h>
 
+#include <pwm_tone.h>
+
 ThreadLvgl threadLvgl(30);
 
 MPU6050 accelero;
@@ -21,24 +23,48 @@ struct position
 
 PwmOut Buzz(A0);
 
+int melody_1[] = {  NOTE_E5, NOTE_E5, NOTE_E5, REST, NOTE_C5, NOTE_E5, 
+                    NOTE_G5, REST, NOTE_G4, REST,
+                    NOTE_C5, NOTE_G4, REST, NOTE_E4, 
+                    NOTE_A4, NOTE_B4, NOTE_AS4, NOTE_A4,
+                    NOTE_G4, NOTE_E5, NOTE_G5, NOTE_A5, NOTE_F5, NOTE_G5,
+                    REST, NOTE_E5,NOTE_C5, NOTE_D5, NOTE_B4,
+                    NOTE_C5, NOTE_G4, REST, NOTE_E4,
+                    NOTE_A4, NOTE_B4, NOTE_AS4, NOTE_A4,
+                    NOTE_G4, NOTE_E5, NOTE_G5, NOTE_A5, NOTE_F5, NOTE_G5,
+                    REST, NOTE_E5,NOTE_C5, NOTE_D5, NOTE_B4, FIN};
+
+int melody_2[] = {  REST, NOTE_G5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_E5,
+                    REST, NOTE_GS4, NOTE_A4, NOTE_C4, REST, NOTE_A4, NOTE_C5, NOTE_D5,
+                    REST, NOTE_DS5, REST, NOTE_D5,
+                    NOTE_C5, REST,};
+
+int active_gs_melody_position = 0;
 
 
-void myEvent(lv_event_t *event)
-{    
+
+void myEvent(lv_event_t *event){    
     if (game_state == 's') game_state = 'g';
-    else if (game_state == 'l')game_state = 's';
+    else if (game_state == 'l')game_state = 's';   
 }
+
+
 
 bool contact (struct position enemy, struct position player);
 
 struct position enemy_move(struct position current_enemy, struct position scnd_enemy, struct position thrd_enemy, struct position frth_enemy, int enemy_speed);
 
+int play_melody ( int melody[], int position);
 
 
 int main() {
     srand(time(NULL));
     float player_speed = 1.7;    
     char direction_p = 'l';
+    char * message = "";
+    char * no_msg = "";
+    char * start_msg = "TAP TO PLAY";
+    char * Game_over_msg = "GAME OVER";
 
     struct position player;
     player.x = 460;
@@ -64,9 +90,11 @@ int main() {
 
     struct position temp_pos; 
 
-
     int score = 0;
     int highest_scr = 0;
+
+    int blink_delay = 0;
+    bool blink_state = true;
     
 
     i2c.frequency(400000);
@@ -112,6 +140,7 @@ int main() {
      
     lv_obj_t * label_score; 
     lv_obj_t * label_highest_scr;  
+    lv_obj_t * label_message;
 
     obj_player = lv_line_create(lv_scr_act());
     lv_line_set_points(obj_player, line_point_p, 5);
@@ -137,7 +166,11 @@ int main() {
     lv_obj_align(label_highest_scr, LV_ALIGN_DEFAULT, 5, 5); 
 
     label_score = lv_label_create(lv_scr_act());
-    lv_obj_align(label_score, LV_ALIGN_DEFAULT, 5, 20);   
+    lv_obj_align(label_score, LV_ALIGN_DEFAULT, 5, 20); 
+    
+    label_message = lv_label_create(lv_scr_act());
+    lv_obj_align(label_message, LV_ALIGN_CENTER,0,0);  
+    lv_obj_add_style(label_message, &style_line_e, 0);
 
        
 
@@ -175,7 +208,20 @@ int main() {
         {
             //////////////START GAME MENU STATE//////////////
             /////WAIT FOR TOUCH EVENT TO START THE GAME/////
-            case 's':                
+            case 's':
+
+                blink_delay +=1;
+                if (blink_delay == 30){
+                    if(blink_state == true){
+                        message = start_msg;
+                        blink_state = false;                    
+                    }else if (blink_state == false){
+                       message = no_msg;
+                        blink_state = true;  
+                    }
+                    blink_delay = 0;                    
+                }
+               
                 temp_pos = enemy_move(enemy_1, enemy_2, enemy_3, enemy_4, enemies_speed);
                 enemy_1.x = temp_pos.x;
                 enemy_1.y = temp_pos.y;
@@ -210,8 +256,9 @@ int main() {
             
             //////////////ACTIVE GAME STATE//////////////
             case 'g':
-                 score +=2;
-                
+                blink_state = false;
+                score +=2;
+                if(active_gs_melody_position !=9999)active_gs_melody_position=play_melody(melody_1, active_gs_melody_position);
                 /////////////////////////////////////MOUVEMENT DE L'ENNEMI/////////////////////////////////////    
                 temp_pos = enemy_move(enemy_1, enemy_2, enemy_3, enemy_4, enemies_speed);
                 enemy_1.x = temp_pos.x;
@@ -276,49 +323,77 @@ int main() {
             case 'l':
                     if (highest_scr< score)highest_scr=score;
                     score = 0;
-                    
-                    
-                    Buzz.period(0.659);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.554);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.659);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.554);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.440);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.494);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.554);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.587);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.494);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.659);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0.440);
-                    Buzz = 0.5;
-                    osDelay(500);
-                    Buzz.period(0);
 
-                    osDelay(1800);
+                
+                    Buzz.period_us(Do5);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(2*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(So4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(2*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(Mi4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(2*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(La4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(Ti4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(La4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(So4s);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(La4s);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(So4s);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(So4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(Re4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(4*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    Buzz.period_us(Mi4);
+                    Buzz.write(0.15f); // 50% duty cycle
+                    osDelay(2*63); // 1 beat
+                    Buzz.write(0.0f); // Sound off
+
+                    
+                    osDelay(1300);
                     enemy_1.x = -20;
                     player.y = 125;
                     enemies_speed = 1.5;
                     game_state = 's';
-                    
+                    direction_p = 'l';
+                    active_gs_melody_position = 0;
+                    start_msg = Game_over_msg;
 
                 break;
 
@@ -341,7 +416,9 @@ int main() {
         lv_obj_set_y(obj_player, player.y);        
         
         lv_label_set_text_fmt(label_score, "Score: %d", score/10);
-        lv_label_set_text_fmt(label_highest_scr, "High Score: %f", enemies_speed);
+        lv_label_set_text_fmt(label_highest_scr, "High Score: %d", highest_scr/10);
+        lv_label_set_text_fmt(label_message,"%s", message);
+
         threadLvgl.unlock();
         
 
@@ -375,3 +452,30 @@ struct position enemy_move(struct position current_enemy, struct position scnd_e
     new_position.y = current_enemy.y;
     return new_position;
 }
+
+int play_melody ( int melody[], int position){
+    
+    Buzz.period_us(melody[position]);
+    Buzz.write(0.15f); // 50% duty cycle
+    //osDelay(4*63); // 1 beat
+    //
+    if (melody[position] >= 9999){
+        Buzz.write(0.0f); // Sound off        
+        return position = 9999;
+    }
+    return position + 1;
+}
+
+
+bool message_blink(int blink_delay, bool blink_state){
+    if(blink_delay<10000){
+        return blink_state;
+    }
+    else{
+        if(blink_state == true)return false;
+        else if (blink_state == false)return true;        
+    }
+    
+}
+
+

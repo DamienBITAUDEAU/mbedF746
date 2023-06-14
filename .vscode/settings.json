@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "condition_variable": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "system_error": "cpp"
     }
 }
